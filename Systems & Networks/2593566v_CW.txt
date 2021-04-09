@@ -1,0 +1,96 @@
+; public class SN_CW {
+; 	
+; 	public static void main(String[] args) {
+; 		int n = 12;
+; 		int[] x = {3, -6, 27, 101, 50, 0, -20, -21, 19, 6, 4, -10};
+; 		int possum = 0;
+; 		int negcount = 0;
+;		int oddcount = 0;
+; 		int overflow = 0;
+; 		for(int i=0;i<n;i++) {
+; 			if(x[i]>0) {
+; 				possum=possum+x[i];
+; 				if(x[i]%2!=0 ) {
+; 					oddcount++;
+; 				}
+; 			} else if(x[i]<0) {negcount++;}
+; 		}
+; 		if(possum<0) {
+; 			overflow = 1;
+; 		}
+; 		System.out.println(possum + " " + negcount + " " + oddcount  + " " + overflow);
+; 	}
+; 	
+; }
+; -----
+; Registers
+; R1 = 1
+; R2 = 2
+; R3 = i
+; R4 = n
+; R5 temporary Boolean
+; R6 = X[i];
+; R7 = possum
+; R8 = negcount
+; R9 = oddcount
+; R10 = overflow
+; R11 = DIV result
+
+	LEA R1,1[R0]             ;constant 1
+        LEA R2,2[R0]             ;constant 2
+        LEA R3,0[R0]             ;i initially 0
+        LOAD R4,n[R0]            ;n
+        LOAD R7,possum[R0]       ;possum
+        LOAD R8,negcount[R0]     ;negcount 0
+        LOAD R9,oddcount[R0]     ;oddcount 0
+        LOAD R10,overflow[R0]    ;overflow
+        LEA R11,32767[R0]        ;boundary without overflow
+
+FOR     CMPLT R5,R3,R4      ;if i<n 
+        JUMPF R5,OVERF[R0]  ;if not go to OVERF
+        LOAD R6,X[R3]       ;R6 = X[i]
+        CMPLT R5,R6,R0      ;if x[i]>0 positive
+        JUMPT R5,NEGCNT[R0] ;if Not go to NEGCOUNT
+        ADD R7,R7,R6        ;possum = possum +X[i]
+        DIV R11,R6,R2       ;R11 := R2/R3, R15 := R2 rem R3
+        CMPEQ R5,R15,R1     ;if X[i]%2 = 1 then R5 true 
+        JUMPT R5,ODDC[R0]   ;if true then go to ODDC for oddcount++
+        ADD R3,R3,R1        ;i++
+        JUMP FOR[R0]        ;back to for Loop 
+
+NEGCNT  ADD R8,R8,R1        ;negcount++
+        ADD R3,R3,R1        ;i++
+        JUMP FOR[R0]        ;back to for Loop 
+
+ODDC    ADD R9,R9,R1        ;oddcount++
+        ADD R3,R3,R1        ;i++
+        JUMP FOR[R0]        ;back to for Loop 
+
+OVERF   CMPGT R5,R7,R11     ;if possum > 32767 then we have overflow
+	JUMPT R5,OUT[R0]    ;If false then go to OUT
+	ADD R10,R10,R1      ;Overflow = 1
+
+OUT     STORE R7,possum[R0]
+        STORE R8,negcount[R0]
+        STORE R9,oddcount[R0]
+	STORE R10,overflow[R0]
+        TRAP R0,R0,R0
+
+
+n   DATA    12
+X   DATA    3
+    DATA    -6
+    DATA    27
+    DATA    101
+    DATA    50
+    DATA    0
+    DATA    -20
+    DATA    -21
+    DATA    19
+    DATA    6
+    DATA    4
+    DATA    -10
+possum DATA 0
+negcount DATA 0
+oddcount DATA 0
+overflow DATA 0
